@@ -11,7 +11,7 @@ function JobBoard() {
       .catch((error) => setError(error.message));
   }, []);
   if (error) {
-    return <div>Somethnig went wrong!</div>;
+    return <div>Something went wrong!</div>;
   }
   return (
     <div>

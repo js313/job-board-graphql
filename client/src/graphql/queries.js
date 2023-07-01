@@ -60,3 +60,22 @@ export async function getCompany(id) {
   const { company } = await request(GRAPHQL_URL, query, variables);
   return company;
 }
+
+export async function createJob(title, companyId, description) {
+  const mutation = gql`
+    mutation JobMutation($createJobInput: CreateJobInput!) {
+      job: createJob(createJobInput: $createJobInput) {
+        id
+      }
+    }
+  `;
+  const variables = {
+    createJobInput: {
+      title,
+      description,
+      companyId,
+    },
+  };
+  const { job } = await request(GRAPHQL_URL, mutation, variables);
+  return job;
+}
