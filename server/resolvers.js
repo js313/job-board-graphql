@@ -16,23 +16,31 @@ const resolvers = {
     },
   },
   Mutation: {
-    createJob: (_root, { createJobInput }) => {
+    createJob: (_root, { createJobInput }, user) => {
+      console.log(user);
+      if (!user) throw new Error("Unauthorized");
       return Job.create({
         title: createJobInput.title,
         description: createJobInput.description,
-        companyId: createJobInput.companyId,
+        companyId: user.companyId,
       });
     },
-    deleteJob: (_root, { id }) => {
+    deleteJob: async (_root, { id }, user) => {
+      if (!user) throw new Error("Unauthorized");
+      const job = await Job.findById(id);
+      if (user.companyId !== job?.companyId) throw new Error("Unauthorized");
       Job.delete(id);
       return id;
     },
-    updateJob: (_root, { updateJobInput }) => {
+    updateJob: async (_root, { updateJobInput }, user) => {
+      if (!user) throw new Error("Unauthorized");
+      const job = await Job.findById(updateJobInput.id);
+      if (user.companyId !== job?.companyId) throw new Error("Unauthorized");
       return Job.update({
         id: updateJobInput.id,
         title: updateJobInput.title,
         description: updateJobInput.description,
-        companyId: updateJobInput.companyId,
+        companyId: user.companyId,
       });
     },
   },

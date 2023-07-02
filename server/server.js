@@ -33,7 +33,13 @@ app.post("/login", async (req, res) => {
 
 const typeDefs = fs.readFileSync("./schema.graphql", "utf-8");
 import resolvers from "./resolvers.js";
-const apolloServer = new ApolloServer({ typeDefs, resolvers });
+const context = async ({ req }) => {
+  if (req.auth) {
+    req.user = await User.findById(req.auth.sub);
+  } else req.user = {};
+  return req.user;
+};
+const apolloServer = new ApolloServer({ typeDefs, resolvers, context });
 
 await apolloServer.start();
 apolloServer.applyMiddleware({ app, path: "/graphql" });
