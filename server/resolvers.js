@@ -17,7 +17,6 @@ const resolvers = {
   },
   Mutation: {
     createJob: (_root, { createJobInput }, user) => {
-      console.log(user);
       if (!user) throw new Error("Unauthorized");
       return Job.create({
         title: createJobInput.title,
