@@ -1,58 +1,49 @@
-import { Job, Company } from "./db.js";
+import { nanoid } from "nanoid";
+import { db } from "./db.js";
 
-const resolvers = {
+function rejectIf(condition) {
+  if (condition) {
+    throw new Error("Unauthorized");
+  }
+}
+
+export const resolvers = {
   Query: {
-    jobs: async () => {
-      return Job.findAll();
-    },
-    job: async (_root, args) => {
-      return Job.findById(args.id);
-    },
-    companies: async () => {
-      return Company.findAll();
-    },
     company: async (_root, { id }) => {
-      return Company.findById(id);
+      return await db.select().from("companies").where("id", id).first();
+    },
+    job: async (_root, { id }) => {
+      return await db.select().from("jobs").where("id", id).first();
+    },
+    jobs: async () => {
+      return await db.select().from("jobs");
     },
   },
+
   Mutation: {
-    createJob: (_root, { createJobInput }, user) => {
-      if (!user.companyId) throw new Error("Unauthorized");
-      return Job.create({
-        title: createJobInput.title,
-        description: createJobInput.description,
+    createJob: async (_root, { input }, { user }) => {
+      rejectIf(!user);
+      const job = {
+        id: nanoid(),
         companyId: user.companyId,
-      });
-    },
-    deleteJob: async (_root, { id }, user) => {
-      if (!user.companyId) throw new Error("Unauthorized");
-      const job = await Job.findById(id);
-      if (user.companyId !== job?.companyId) throw new Error("Unauthorized");
-      Job.delete(id);
-      return id;
-    },
-    updateJob: async (_root, { updateJobInput }, user) => {
-      if (!user.companyId) throw new Error("Unauthorized");
-      const job = await Job.findById(updateJobInput.id);
-      if (user.companyId !== job?.companyId) throw new Error("Unauthorized");
-      return Job.update({
-        id: updateJobInput.id,
-        title: updateJobInput.title,
-        description: updateJobInput.description,
-        companyId: user.companyId,
-      });
+        ...input,
+      };
+      await db.insert(job).into("jobs");
+      return job;
     },
   },
-  Job: {
-    company: async (job) => {
-      return Company.findById(job.companyId);
-    },
-  },
+
   Company: {
     jobs: async (company) => {
-      return Job.findAll((job) => company.id === job.companyId);
+      return await db.select().from("jobs").where("companyId", company.id);
+    },
+  },
+
+  Job: {
+    company: async (job, _v, { companyLoader }) => {
+      //N+1 Query problem
+      // return await db.select().from('companies').where('id', job.companyId).first();
+      return await companyLoader.load(job.companyId);
     },
   },
 };
-
-export default resolvers;
